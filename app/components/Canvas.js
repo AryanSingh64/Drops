@@ -5,18 +5,37 @@ import { useState } from "react";
 export default function Canvas() {
     const [offset,  setOffset] = useState({ x: 0, y: 0 });
     const [scale, setScale] = useState(1);
-    const [isDragging, setIsDragging] = useState(false);
+    const [isPanning, setIsPanning] = useState(false);
+    const [draggingElementId, setDraggingElementId] = useState(null);
+    const [elements, setElements] = useState([
+        {
+            id:1,
+            type:"text",
+            x:100,
+            y:100,
+            content:"Hello world"
+        },
+        {
+            id:2,
+            type:"box",
+            x:400,
+            y:200,
+            color:"Blue"
+        }
+    ])
 
-    const handleMouseDown = (e) =>{
-        e.preventDefault();
-        setIsDragging(true);
+    const handleCanvasMouseDown = (e) =>{
+        setIsPanning(true);
     }
-    const handleMouseUp = () => {
-        setIsDragging(false);
+
+    const handleCanvasMouseUp = () =>{
+        setIsPanning(false);
+        setDraggingElementId(null);
     }
-    const handleMouseMove = (e) => {
+
+    const handleCanvasMouseMove = (e) =>{
         e.preventDefault();
-        if(isDragging){
+        if(isPanning){
             setOffset((prev) => {
                return{ 
                 x:prev.x + e.movementX,
@@ -27,6 +46,35 @@ export default function Canvas() {
             console.log("movement", e.movementX, e.movementY);
         }
     }
+
+
+
+
+    const handleElementMouseMove = (e) => {
+     if (draggingElementId === null) return;
+       setElements((prev) => {
+        return prev.map((el) => {
+            if (el.id === draggingElementId) {
+                return {
+                    ...el,
+                    x: el.x + e.movementX / scale,
+                    y: el.y + e.movementY / scale
+                }
+            }
+            return el;
+        })
+       })
+    }
+
+
+
+const handleElementMouseDown = (id, e) => {
+    e.stopPropagation();                
+    setDraggingElementId(id);
+};
+
+
+
 
     const viewportRef = useRef(null);
 
@@ -60,7 +108,7 @@ export default function Canvas() {
         position: "fixed",
         top: 0,
         left: 0,
-        cursor: isDragging ? "grabbing" : "grab",
+        cursor: isPanning ? "grabbing" : "grab",
         border: "1px solid white",
     };
 
@@ -76,17 +124,62 @@ export default function Canvas() {
     return (
         <div
          style={viewportStyle}
-         onMouseDown={handleMouseDown}
-         onMouseUp={handleMouseUp}
-         onMouseMove={handleMouseMove}
+         onMouseDown={handleCanvasMouseDown}
+         onMouseUp={handleCanvasMouseUp}
+        onMouseMove={(e) => {
+        handleCanvasMouseMove(e);
+        handleElementMouseMove(e);
+    }}
          onWheel={handleWheel}
          ref={viewportRef}
          className="bg-neutral-900"
         >
             <div style={canvasStyle} className="bg-neutral-900">
+{elements.map((el) => {
+    if (el.type === "text") {
+        return (
+            <div
+                key={el.id}
+                 onMouseDown={(e) => handleElementMouseDown(el.id, e)}
+                //  onMouseUp={(e) => handleElementMouseUp(el.id, e)}
+                style={{
+                    position: "absolute",
+                    left: el.x,
+                    top: el.y,
+                    color: "white",
+                    cursor: draggingElementId === el.id ? "grabbing" : "grab",
+                }}
+            >
+                {el.content}
+            </div>
+        );
+    }
 
-                {/* <h1>{handleMouseMove}</h1> */}
-                Canvas Content
+    if (el.type === "box") {
+        return (
+            <div
+                key={el.id}
+                onMouseDown={(e) => handleElementMouseDown(el.id, e)}
+                // onMouseUp={(e) => handleElementMouseUp(el.id, e)}
+                style={{
+                    position: "absolute",
+                    left: el.x,
+                    top: el.y,
+                    width: 100,
+                    height: 100,
+                    background: el.color,
+                    cursor: draggingElementId === el.id ? "grabbing" : "grab",
+                }}
+            >
+                {el.content}
+                {console.log("clicked")}
+            </div>
+        );
+    }
+
+    return null;
+})}
+
             </div>
         </div>
     );
