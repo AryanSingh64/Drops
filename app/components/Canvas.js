@@ -1,5 +1,5 @@
 "use client"
-
+import { useRef } from "react";
 import { useState } from "react";
 
 export default function Canvas() {
@@ -27,6 +27,32 @@ export default function Canvas() {
             console.log("movement", e.movementX, e.movementY);
         }
     }
+
+    const viewportRef = useRef(null);
+
+    const handleWheel = (e) => {
+        e.preventDefault();
+        const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
+        const minZoom = 0.2;
+        const maxZoom = 5;
+        let rawScale = scale * zoomFactor;
+
+        const newScale = Math.max(minZoom, Math.min(maxZoom, rawScale));
+        if (newScale === scale) return; 
+        const rect = viewportRef.current.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+
+        const appliedFactor = newScale / scale;
+
+       const newX = mouseX - (mouseX - offset.x) * appliedFactor;
+       const newY = mouseY - (mouseY - offset.y) * appliedFactor;
+
+       setScale(newScale);
+       setOffset({ x: newX, y: newY });
+    }
+
+
     const viewportStyle = {
         width: "100vw",
         height: "100vh",
@@ -43,7 +69,8 @@ export default function Canvas() {
         height: "100%",
         transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
         transformOrigin: "top left",
-        background: "red",
+        // background: "#111111",
+        color: "white",
     };
 
     return (
@@ -52,8 +79,11 @@ export default function Canvas() {
          onMouseDown={handleMouseDown}
          onMouseUp={handleMouseUp}
          onMouseMove={handleMouseMove}
+         onWheel={handleWheel}
+         ref={viewportRef}
+         className="bg-neutral-900"
         >
-            <div style={canvasStyle}>
+            <div style={canvasStyle} className="bg-neutral-900">
 
                 {/* <h1>{handleMouseMove}</h1> */}
                 Canvas Content
