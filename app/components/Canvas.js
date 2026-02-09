@@ -8,22 +8,7 @@ export default function Canvas() {
     const [scale, setScale] = useState(1);
     const [isPanning, setIsPanning] = useState(false);
     const [draggingElementId, setDraggingElementId] = useState(null);
-    const [elements, setElements] = useState([
-        {
-            id: 1,
-            type: "text",
-            x: 100,
-            y: 100,
-            content: "Hello world"
-        },
-        {
-            id: 2,
-            type: "box",
-            x: 400,
-            y: 200,
-            color: "Blue"
-        }
-    ])
+    const [elements, setElements] = useState([])
     const [editingId, setEditingId] = useState(null);
 
 
@@ -46,7 +31,7 @@ export default function Canvas() {
             type: type,
             x: worldX,
             y: worldY,
-            content: "Start Typing...",
+            content: "",
             color: "Blue"
         }
         setElements((prev) => [...prev, newItem]);
@@ -76,6 +61,19 @@ export default function Canvas() {
         }
     }
 
+    const updateElement = (id, field, value) => {
+        setElements((prev) => {
+            return prev.map((el) => {
+                if (el.id === id) {
+                    return {
+                        ...el,
+                        [field]: value
+                    }
+                }
+                return el;
+            })
+        })
+    }
 
 
 
@@ -188,18 +186,20 @@ export default function Canvas() {
                                 {isEditing ? (
                                     <textarea 
                                         autoFocus 
+                                        onFocus={(e) => {
+                                            const val = e.target.value;
+                                            e.target.setSelectionRange(val.length, val.length);
+                                        }}
                                         value={el.content} 
                                         onChange={(e)=> updateElement(el.id, "content", e.target.value)}
                                         onMouseDown={(e)=> e.stopPropagation()}
                                         onBlur={(e)=> setEditingId(null)}
+                                        placeholder="Start Typing..."
                                         className="w-full h-full bg-transparent border-none outline-none resize-none"
                                          style={{ minHeight: "50px" }}
                                          />
                                 ): (
-                                     <div className="whitespace-pre-wrap">{el.content}</div>
-                                
-                            
-
+                                     <div className="whitespace-pre-wrap select-none" style={{ color: el.content ? "inherit" : "#888" }}>{el.content || "Start Typing..."}</div>
                                 )}
                             </div>
                         );
