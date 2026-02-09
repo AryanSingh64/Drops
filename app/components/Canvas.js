@@ -1,47 +1,76 @@
 "use client"
 import { useRef } from "react";
 import { useState } from "react";
+import Toolbar from "./Toolbar";
 
 export default function Canvas() {
-    const [offset,  setOffset] = useState({ x: 0, y: 0 });
+    const [offset, setOffset] = useState({ x: 0, y: 0 });
     const [scale, setScale] = useState(1);
     const [isPanning, setIsPanning] = useState(false);
     const [draggingElementId, setDraggingElementId] = useState(null);
     const [elements, setElements] = useState([
         {
-            id:1,
-            type:"text",
-            x:100,
-            y:100,
-            content:"Hello world"
+            id: 1,
+            type: "text",
+            x: 100,
+            y: 100,
+            content: "Hello world"
         },
         {
-            id:2,
-            type:"box",
-            x:400,
-            y:200,
-            color:"Blue"
+            id: 2,
+            type: "box",
+            x: 400,
+            y: 200,
+            color: "Blue"
         }
     ])
+    const [editingId, setEditingId] = useState(null);
 
-    const handleCanvasMouseDown = (e) =>{
-        setIsPanning(true);
+
+    const onDoubleClick = (id, e) => {
+        e.stopPropagation();
+        setEditingId(id);
+        setDraggingElementId(null);
+        // console.log('clicked');
+
+    }
+    const addElement = (type) => {
+        const centerX = window.innerWidth / 2 - offset.x;
+        const centerY = window.innerHeight / 2 - offset.y;
+
+        const worldX = centerX / scale;
+        const worldY = centerY / scale;
+
+        const newItem = {
+            id: Date.now(),
+            type: type,
+            x: worldX,
+            y: worldY,
+            content: "Start Typing...",
+            color: "Blue"
+        }
+        setElements((prev) => [...prev, newItem]);
     }
 
-    const handleCanvasMouseUp = () =>{
+    const handleCanvasMouseDown = (e) => {
+        setIsPanning(true);
+        setEditingId(null);
+    }
+
+    const handleCanvasMouseUp = () => {
         setIsPanning(false);
         setDraggingElementId(null);
     }
 
-    const handleCanvasMouseMove = (e) =>{
+    const handleCanvasMouseMove = (e) => {
         e.preventDefault();
-        if(isPanning){
+        if (isPanning) {
             setOffset((prev) => {
-               return{ 
-                x:prev.x + e.movementX,
-                y:prev.y + e.movementY
+                return {
+                    x: prev.x + e.movementX,
+                    y: prev.y + e.movementY
                 }
-                
+
             })
             console.log("movement", e.movementX, e.movementY);
         }
@@ -51,27 +80,27 @@ export default function Canvas() {
 
 
     const handleElementMouseMove = (e) => {
-     if (draggingElementId === null) return;
-       setElements((prev) => {
-        return prev.map((el) => {
-            if (el.id === draggingElementId) {
-                return {
-                    ...el,
-                    x: el.x + e.movementX / scale,
-                    y: el.y + e.movementY / scale
+        if (draggingElementId === null) return;
+        setElements((prev) => {
+            return prev.map((el) => {
+                if (el.id === draggingElementId) {
+                    return {
+                        ...el,
+                        x: el.x + e.movementX / scale,
+                        y: el.y + e.movementY / scale
+                    }
                 }
-            }
-            return el;
+                return el;
+            })
         })
-       })
     }
 
 
 
-const handleElementMouseDown = (id, e) => {
-    e.stopPropagation();                
-    setDraggingElementId(id);
-};
+    const handleElementMouseDown = (id, e) => {
+        e.stopPropagation();
+        setDraggingElementId(id);
+    };
 
 
 
@@ -86,18 +115,18 @@ const handleElementMouseDown = (id, e) => {
         let rawScale = scale * zoomFactor;
 
         const newScale = Math.max(minZoom, Math.min(maxZoom, rawScale));
-        if (newScale === scale) return; 
+        if (newScale === scale) return;
         const rect = viewportRef.current.getBoundingClientRect();
         const mouseX = e.clientX - rect.left;
         const mouseY = e.clientY - rect.top;
 
         const appliedFactor = newScale / scale;
 
-       const newX = mouseX - (mouseX - offset.x) * appliedFactor;
-       const newY = mouseY - (mouseY - offset.y) * appliedFactor;
+        const newX = mouseX - (mouseX - offset.x) * appliedFactor;
+        const newY = mouseY - (mouseY - offset.y) * appliedFactor;
 
-       setScale(newScale);
-       setOffset({ x: newX, y: newY });
+        setScale(newScale);
+        setOffset({ x: newX, y: newY });
     }
 
 
@@ -123,62 +152,61 @@ const handleElementMouseDown = (id, e) => {
 
     return (
         <div
-         style={viewportStyle}
-         onMouseDown={handleCanvasMouseDown}
-         onMouseUp={handleCanvasMouseUp}
-        onMouseMove={(e) => {
-        handleCanvasMouseMove(e);
-        handleElementMouseMove(e);
-    }}
-         onWheel={handleWheel}
-         ref={viewportRef}
-         className="bg-neutral-900"
+            style={viewportStyle}
+            onMouseDown={handleCanvasMouseDown}
+            onMouseUp={handleCanvasMouseUp}
+            onMouseMove={(e) => {
+                handleCanvasMouseMove(e);
+                handleElementMouseMove(e);
+            }}
+            onWheel={handleWheel}
+            ref={viewportRef}
+            className="bg-neutral-900"
         >
+
+            <Toolbar onAddElement={addElement} />
+
             <div style={canvasStyle} className="bg-neutral-900">
-{elements.map((el) => {
-    if (el.type === "text") {
-        return (
-            <div
-                key={el.id}
-                 onMouseDown={(e) => handleElementMouseDown(el.id, e)}
-                //  onMouseUp={(e) => handleElementMouseUp(el.id, e)}
-                style={{
-                    position: "absolute",
-                    left: el.x,
-                    top: el.y,
-                    color: "white",
-                    cursor: draggingElementId === el.id ? "grabbing" : "grab",
-                }}
-            >
-                {el.content}
-            </div>
-        );
-    }
+                {elements.map((el) => {
+                    if (el.type === "text") {
+                        const isEditing = editingId === el.id;
 
-    if (el.type === "box") {
-        return (
-            <div
-                key={el.id}
-                onMouseDown={(e) => handleElementMouseDown(el.id, e)}
-                // onMouseUp={(e) => handleElementMouseUp(el.id, e)}
-                style={{
-                    position: "absolute",
-                    left: el.x,
-                    top: el.y,
-                    width: 100,
-                    height: 100,
-                    background: el.color,
-                    cursor: draggingElementId === el.id ? "grabbing" : "grab",
-                }}
-            >
-                {el.content}
-                {console.log("clicked")}
-            </div>
-        );
-    }
+                        return (
+                            <div
+                                key={el.id}
+                                style={{
+                                    left: el.x,
+                                    top: el.y,
+                                    
+                                    cursor: isEditing ? "text" : "grab",
+                                }}
+                                onDoubleClick={(e) => onDoubleClick(el.id, e)}
+                                onMouseDown={(e) =>
+                                    !isEditing && handleElementMouseDown(el.id, e)}
+                                className="bg-[#333333] text-neutral-400 text-sm px-8 py-4 shadow-md absolute hover:bg-neutral-800">
 
-    return null;
-})}
+                                {isEditing ? (
+                                    <textarea 
+                                        autoFocus 
+                                        value={el.content} 
+                                        onChange={(e)=> updateElement(el.id, "content", e.target.value)}
+                                        onMouseDown={(e)=> e.stopPropagation()}
+                                        onBlur={(e)=> setEditingId(null)}
+                                        className="w-full h-full bg-transparent border-none outline-none resize-none"
+                                         style={{ minHeight: "50px" }}
+                                         />
+                                ): (
+                                     <div className="whitespace-pre-wrap">{el.content}</div>
+                                
+                            
+
+                                )}
+                            </div>
+                        );
+                    }
+
+                    return null;
+                })}
 
             </div>
         </div>
