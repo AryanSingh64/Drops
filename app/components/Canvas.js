@@ -2,6 +2,7 @@
 import { useRef } from "react";
 import { useState } from "react";
 import Toolbar from "./Toolbar";
+import TextElement from "./elements/TextElement";
 
 export default function Canvas() {
     const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -12,6 +13,38 @@ export default function Canvas() {
     const [editingId, setEditingId] = useState(null);
 
 
+
+  const handleDrop = (e) => { 
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    
+    const rect = viewportRef.current.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    
+    const worldX = (mouseX - offset.x) / scale;
+    const worldY = (mouseY - offset.y) / scale;
+
+    if (file && file.type.startsWith("image/")) {
+        const reader = new FileReader();
+        
+        reader.onload = (loadEvent) => {
+            const imageUrl = loadEvent.target.result;
+            
+            const newImage = {
+                id: Date.now(),
+                type: "image",
+                x: worldX, 
+                y: worldY, 
+                content: imageUrl,
+                width: 300,
+                height: "auto"
+            };
+            setElements((prev) => [...prev, newImage]);
+        };
+        reader.readAsDataURL(file);
+    }
+}
     const onDoubleClick = (id, e) => {
         e.stopPropagation();
         setEditingId(id);
@@ -19,7 +52,7 @@ export default function Canvas() {
         // console.log('clicked');
 
     }
-    const addElement = (type) => {
+    const addElement = (type,content="") => {
         const centerX = window.innerWidth / 2 - offset.x;
         const centerY = window.innerHeight / 2 - offset.y;
 
@@ -31,7 +64,7 @@ export default function Canvas() {
             type: type,
             x: worldX,
             y: worldY,
-            content: "",
+            content: content,
             color: "Blue"
         }
         setElements((prev) => [...prev, newItem]);
@@ -149,7 +182,10 @@ export default function Canvas() {
     };
 
     return (
+        //viewport div
         <div
+            onDragOver={(e)=> e.preventDefault()}
+            onDrop={handleDrop}
             style={viewportStyle}
             onMouseDown={handleCanvasMouseDown}
             onMouseUp={handleCanvasMouseUp}
@@ -183,27 +219,48 @@ export default function Canvas() {
                                     !isEditing && handleElementMouseDown(el.id, e)}
                                 className="bg-[#333333] text-neutral-400 text-sm px-8 py-4 shadow-md absolute hover:bg-neutral-800">
 
-                                {isEditing ? (
-                                    <textarea 
-                                        autoFocus 
-                                        onFocus={(e) => {
-                                            const val = e.target.value;
-                                            e.target.setSelectionRange(val.length, val.length);
-                                        }}
-                                        value={el.content} 
-                                        onChange={(e)=> updateElement(el.id, "content", e.target.value)}
-                                        onMouseDown={(e)=> e.stopPropagation()}
-                                        onBlur={(e)=> setEditingId(null)}
-                                        placeholder="Start Typing..."
-                                        className="w-full h-full bg-transparent border-none outline-none resize-none"
-                                         style={{ minHeight: "50px" }}
-                                         />
-                                ): (
-                                     <div className="whitespace-pre-wrap select-none" style={{ color: el.content ? "inherit" : "#888" }}>{el.content || "Start Typing..."}</div>
-                                )}
+                                <TextElement 
+                                    el={el}
+                                    isEditing={isEditing}
+                                    updateElement={updateElement}
+                                    onDragStart={(e) => handleElementMouseDown(el.id, e)}
+                                    setEditingId={setEditingId}
+                                />
                             </div>
                         );
+
                     }
+
+                        if(el.type === "image"){
+                            const isDragging = draggingElementId === el.id;
+                            return (
+                                <div
+                                    key={el.id}
+                                    style={{
+                                        position:"absolute",
+                                        left:el.x,
+                                        top:el.y,
+                                        cursor: isDragging ? "grabbing" : "grab",
+                                    }}
+                                    onMouseDown={(e)=> handleElementMouseDown(el.id, e)}
+                                    // className="absolute"
+                                >
+                                    <img 
+                                    src={el.content} 
+                                    alt="dropped"
+                                    style={{
+                                        width:el.width,
+                                        userSelect:"none",
+                                        pointerEvents:"none",
+                                    }}
+                                    draggable={false} />
+                                    
+                                </div>
+                            )
+                        
+                    }
+
+                    
 
                     return null;
                 })}

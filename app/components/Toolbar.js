@@ -3,6 +3,15 @@ import { useState } from "react";
 
 
 export default function Toolbar({onAddElement}) {
+    const handleImageUpload = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            onAddElement("image", event.target.result);
+        };
+        reader.readAsDataURL(file);
+    }
     const style = {
         padding: "4px 8px",
         cursor: "pointer",
@@ -22,6 +31,16 @@ export default function Toolbar({onAddElement}) {
             style={style}>
                 Text
             </button>
+
+            <label style={style}
+            >
+                Image
+                <input
+                 type="file" 
+                 accept="image/*" 
+                 onChange={handleImageUpload} 
+                 style={{display: "none"}} />
+            </label>
         </div>
     );
 }
