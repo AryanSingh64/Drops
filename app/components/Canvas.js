@@ -3,6 +3,8 @@ import { useRef } from "react";
 import { useState } from "react";
 import Toolbar from "./Toolbar";
 import TextElement from "./elements/TextElement";
+import Resizable from "./Resizable";
+
 
 export default function Canvas() {
     const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -14,37 +16,49 @@ export default function Canvas() {
 
 
 
-  const handleDrop = (e) => { 
-    e.preventDefault();
-    const file = e.dataTransfer.files[0];
-    
-    const rect = viewportRef.current.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-    
-    const worldX = (mouseX - offset.x) / scale;
-    const worldY = (mouseY - offset.y) / scale;
 
-    if (file && file.type.startsWith("image/")) {
-        const reader = new FileReader();
-        
-        reader.onload = (loadEvent) => {
-            const imageUrl = loadEvent.target.result;
-            
-            const newImage = {
-                id: Date.now(),
-                type: "image",
-                x: worldX, 
-                y: worldY, 
-                content: imageUrl,
-                width: 300,
-                height: "auto"
-            };
-            setElements((prev) => [...prev, newImage]);
-        };
-        reader.readAsDataURL(file);
+    const handleImageResize = (id, width, height) => {
+        const minSize = 50;
+        const maxSize = 1000;
+
+        const w = Math.max(minSize, Math.min(maxSize, width));
+        const h = Math.max(minSize, Math.min(maxSize, height));
+
+        onResize(id, w, h);
     }
-}
+
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        const file = e.dataTransfer.files[0];
+
+        const rect = viewportRef.current.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+
+        const worldX = (mouseX - offset.x) / scale;
+        const worldY = (mouseY - offset.y) / scale;
+
+        if (file && file.type.startsWith("image/")) {
+            const reader = new FileReader();
+
+            reader.onload = (loadEvent) => {
+                const imageUrl = loadEvent.target.result;
+
+                const newImage = {
+                    id: Date.now(),
+                    type: "image",
+                    x: worldX,
+                    y: worldY,
+                    content: imageUrl,
+                    width: 300,
+                    height: 300
+                };
+                setElements((prev) => [...prev, newImage]);
+            };
+            reader.readAsDataURL(file);
+        }
+    }
     const onDoubleClick = (id, e) => {
         e.stopPropagation();
         setEditingId(id);
@@ -52,7 +66,7 @@ export default function Canvas() {
         // console.log('clicked');
 
     }
-    const addElement = (type,content="") => {
+    const addElement = (type, content = "") => {
         const centerX = window.innerWidth / 2 - offset.x;
         const centerY = window.innerHeight / 2 - offset.y;
 
@@ -106,6 +120,13 @@ export default function Canvas() {
                 return el;
             })
         })
+    }
+
+    const onResize = (id, width, height) => {
+        console.log("Canvas Updating!", id, width, height);
+        setElements((prev) => prev.map((el) =>
+            el.id === id ? { ...el, width, height } : el
+        ));
     }
 
 
@@ -184,7 +205,7 @@ export default function Canvas() {
     return (
         //viewport div
         <div
-            onDragOver={(e)=> e.preventDefault()}
+            onDragOver={(e) => e.preventDefault()}
             onDrop={handleDrop}
             style={viewportStyle}
             onMouseDown={handleCanvasMouseDown}
@@ -211,7 +232,7 @@ export default function Canvas() {
                                 style={{
                                     left: el.x,
                                     top: el.y,
-                                    
+
                                     cursor: isEditing ? "text" : "grab",
                                 }}
                                 onDoubleClick={(e) => onDoubleClick(el.id, e)}
@@ -219,7 +240,7 @@ export default function Canvas() {
                                     !isEditing && handleElementMouseDown(el.id, e)}
                                 className="bg-[#333333] text-neutral-400 text-sm px-8 py-4 shadow-md absolute hover:bg-neutral-800">
 
-                                <TextElement 
+                                <TextElement
                                     el={el}
                                     isEditing={isEditing}
                                     updateElement={updateElement}
@@ -230,38 +251,45 @@ export default function Canvas() {
                         );
 
                     }
+                    if (el.type === "image") {
+                        const isDragging = draggingElementId === el.id;
+                        return (
+                            <div
+                                key={el.id}
+                                style={{
+                                    position: "absolute",
+                                    left: el.x,
+                                    top: el.y,
+                                    cursor: isDragging ? "grabbing" : "grab",
+                                }}
+                                onMouseDown={(e) => handleElementMouseDown(el.id, e)}
+                            // className="absolute"
+                            >
+                                <Resizable
+                                    scale={scale}
+                                    width={el.width}
+                                    height={el.height}
+                                    isSelected={true}
+                                    onResize={(w, h) => {
+                                        handleImageResize(el.id, w, h);
+                                    }
 
-                        if(el.type === "image"){
-                            const isDragging = draggingElementId === el.id;
-                            return (
-                                <div
-                                    key={el.id}
-                                    style={{
-                                        position:"absolute",
-                                        left:el.x,
-                                        top:el.y,
-                                        cursor: isDragging ? "grabbing" : "grab",
-                                    }}
-                                    onMouseDown={(e)=> handleElementMouseDown(el.id, e)}
-                                    // className="absolute"
-                                >
-                                    <img 
-                                    src={el.content} 
-                                    alt="dropped"
-                                    style={{
-                                        width:el.width,
-                                        userSelect:"none",
-                                        pointerEvents:"none",
-                                    }}
-                                    draggable={false} />
-                                    
-                                </div>
-                            )
-                        
+                                    }>
+                                    <img
+                                        src={el.content}
+                                        alt="dropped"
+                                        style={{
+                                            width: el.width,
+                                            userSelect: "none",
+                                            pointerEvents: "none",
+                                        }}
+                                        draggable={false} />
+                                </Resizable>
+
+                            </div>
+                        )
+
                     }
-
-                    
-
                     return null;
                 })}
 
