@@ -31,24 +31,17 @@ export default function Canvas() {
 
     const handleDrop = (e) => {
         e.preventDefault();
+        const file = e.dataTransfer.files[0];
+        if (!file || !file.type.startsWith("image/")) return;
+
         const rect = viewportRef.current.getBoundingClientRect();
         const mouseX = e.clientX - rect.left;
         const mouseY = e.clientY - rect.top;
-
         const worldX = (mouseX - offset.x) / scale;
         const worldY = (mouseY - offset.y) / scale;
-        if (!file || !file.type.startsWith("image/")) return;
-        const file = e.dataTransfer.files[0];
-        reader.readAsDataURL(file);
 
         const reader = new FileReader();
-        reader.readAsDataURL(file);
-
-
-
         reader.onload = (loadEvent) => {
-            
-            
             const imageUrl = loadEvent.target.result;
 
             const img = new Image();
@@ -59,7 +52,6 @@ export default function Canvas() {
                 const initialWidth = 300;
                 const initialHeight = initialWidth * ratio;
 
-
                 const newImage = {
                     id: Date.now(),
                     type: "image",
@@ -68,17 +60,12 @@ export default function Canvas() {
                     content: imageUrl,
                     width: initialWidth,
                     height: initialHeight,
-                    aspectRatio: ratio   
+                    aspectRatio: ratio
                 };
-
                 setElements((prev) => [...prev, newImage]);
-            }
-        }
-        
-
-
-
-  
+            };
+        };
+        reader.readAsDataURL(file);
     }
     const onDoubleClick = (id, e) => {
         e.stopPropagation();
@@ -101,8 +88,8 @@ export default function Canvas() {
             y: worldY,
             content: content,
             color: "Blue",
-      width: type === "text" ? undefined : 300,
-    height: type === "text" ? undefined : 300
+            width: type === "text" ? undefined : 300,
+            height: type === "text" ? undefined : 300
         }
         setElements((prev) => [...prev, newItem]);
     }
@@ -127,7 +114,6 @@ export default function Canvas() {
                 }
 
             })
-            console.log("movement", e.movementX, e.movementY);
         }
     }
 
@@ -145,12 +131,7 @@ export default function Canvas() {
         })
     }
 
-    const onResize = (id, width, height) => {
-        console.log("Canvas Updating!", id, width, height);
-        setElements((prev) => prev.map((el) =>
-            el.id === id ? { ...el, width, height } : el
-        ));
-    }
+
 
 
 

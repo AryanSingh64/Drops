@@ -23,7 +23,7 @@ export default function Resizable({
         const handleMouseMove = (e) => {
             const currentW = widthRef.current;
             const currentH = heightRef.current;
-            const ratio = currentH / currentW;  
+            const ratio = currentH / currentW;
             const newWidth = currentW + (e.movementX / scaleRef.current);
             const newHeight = newWidth * ratio;
 
@@ -42,7 +42,6 @@ export default function Resizable({
         return () => {
             window.removeEventListener("mousemove", handleMouseMove);
             window.removeEventListener("mouseup", handleMouseUp);
-            console.log("Resizable Props:", "Width:", width, "Height:", height, "Scale:", scale);
         }
     }, [isResizing])
     return (
@@ -53,7 +52,6 @@ export default function Resizable({
             {children}
             {isSelected && (
                 <>
-                    <div className="absolute bottom-0 right-0 w-4 h-4 bg-white cursor-nwse-resize" />
 
                     <div
                         onMouseDown={(e) => {
