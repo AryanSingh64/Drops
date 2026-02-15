@@ -16,7 +16,6 @@ export default function Canvas() {
 
 
 
-
     const handleImageResize = (id, width, height) => {
         const minSize = 50;
         const maxSize = 1000;
@@ -24,26 +23,42 @@ export default function Canvas() {
         const w = Math.max(minSize, Math.min(maxSize, width));
         const h = Math.max(minSize, Math.min(maxSize, height));
 
-        onResize(id, w, h);
+        setElements((prev) => prev.map((el) =>
+            el.id === id ? { ...el, width: w, height: h } : el
+        ));
     }
 
 
     const handleDrop = (e) => {
         e.preventDefault();
-        const file = e.dataTransfer.files[0];
-
         const rect = viewportRef.current.getBoundingClientRect();
         const mouseX = e.clientX - rect.left;
         const mouseY = e.clientY - rect.top;
 
         const worldX = (mouseX - offset.x) / scale;
         const worldY = (mouseY - offset.y) / scale;
+        if (!file || !file.type.startsWith("image/")) return;
+        const file = e.dataTransfer.files[0];
+        reader.readAsDataURL(file);
 
-        if (file && file.type.startsWith("image/")) {
-            const reader = new FileReader();
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
 
-            reader.onload = (loadEvent) => {
-                const imageUrl = loadEvent.target.result;
+
+
+        reader.onload = (loadEvent) => {
+            
+            
+            const imageUrl = loadEvent.target.result;
+
+            const img = new Image();
+            img.src = imageUrl;
+
+            img.onload = () => {
+                const ratio = img.naturalHeight / img.naturalWidth;
+                const initialWidth = 300;
+                const initialHeight = initialWidth * ratio;
+
 
                 const newImage = {
                     id: Date.now(),
@@ -51,13 +66,19 @@ export default function Canvas() {
                     x: worldX,
                     y: worldY,
                     content: imageUrl,
-                    width: 300,
-                    height: 300
+                    width: initialWidth,
+                    height: initialHeight,
+                    aspectRatio: ratio   
                 };
+
                 setElements((prev) => [...prev, newImage]);
-            };
-            reader.readAsDataURL(file);
+            }
         }
+        
+
+
+
+  
     }
     const onDoubleClick = (id, e) => {
         e.stopPropagation();
@@ -79,7 +100,9 @@ export default function Canvas() {
             x: worldX,
             y: worldY,
             content: content,
-            color: "Blue"
+            color: "Blue",
+      width: type === "text" ? undefined : 300,
+    height: type === "text" ? undefined : 300
         }
         setElements((prev) => [...prev, newItem]);
     }
@@ -279,7 +302,9 @@ export default function Canvas() {
                                         src={el.content}
                                         alt="dropped"
                                         style={{
-                                            width: el.width,
+                                            width: "100%",
+                                            objectFit: "contain",
+                                            height: "100%",
                                             userSelect: "none",
                                             pointerEvents: "none",
                                         }}

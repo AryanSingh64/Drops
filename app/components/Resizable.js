@@ -7,18 +7,27 @@ export default function Resizable({
 
     const [isResizing, setIsResizing] = useState(false);
 
+    const onResizeRef = useRef(onResize);
+    const widthRef = useRef(width);
+    const heightRef = useRef(height);
+    const scaleRef = useRef(scale);
+
+    onResizeRef.current = onResize;
+    widthRef.current = width;
+    heightRef.current = height;
+    scaleRef.current = scale;
 
 
     useEffect(() => {
 
         const handleMouseMove = (e) => {
-            console.log("Resizing!", e.movementX);
-            if (!isResizing) return;
+            const currentW = widthRef.current;
+            const currentH = heightRef.current;
+            const ratio = currentH / currentW;  
+            const newWidth = currentW + (e.movementX / scaleRef.current);
+            const newHeight = newWidth * ratio;
 
-            const newWidth = width + (e.movementX / scale);
-            const newHeight = height + (e.movementY / scale);
-
-            onResize(newWidth, newHeight);
+            onResizeRef.current(newWidth, newHeight);
         }
 
         const handleMouseUp = () => {
@@ -35,7 +44,7 @@ export default function Resizable({
             window.removeEventListener("mouseup", handleMouseUp);
             console.log("Resizable Props:", "Width:", width, "Height:", height, "Scale:", scale);
         }
-    }, [isResizing, width, height, onResize, scale])
+    }, [isResizing])
     return (
         <div style={{
             position: "relative",
