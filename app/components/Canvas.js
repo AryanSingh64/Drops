@@ -3,7 +3,7 @@ import { useRef } from "react";
 import { useState } from "react";
 import Toolbar from "./Toolbar";
 import TextElement from "./elements/TextElement";
-import Resizable from "./Resizable";
+import ResizableContainer from "./ResizableContainer";
 
 
 export default function Canvas() {
@@ -17,7 +17,7 @@ export default function Canvas() {
 
 
     const handleImageResize = (id, width, height) => {
-        const minSize = 50;
+        const minSize = 90;
         const maxSize = 1000;
 
         const w = Math.max(minSize, Math.min(maxSize, width));
@@ -81,6 +81,30 @@ export default function Canvas() {
         const worldX = centerX / scale;
         const worldY = centerY / scale;
 
+        if (type === "image" && content) {
+            // Load the image first to get its natural dimensions
+            const img = new Image();
+            img.src = content;
+            img.onload = () => {
+                const ratio = img.naturalHeight / img.naturalWidth;
+                const initialWidth = 300;
+                const initialHeight = initialWidth * ratio;
+
+                const newItem = {
+                    id: Date.now(),
+                    type: "image",
+                    x: worldX,
+                    y: worldY,
+                    content: content,
+                    width: initialWidth,
+                    height: initialHeight,
+                    aspectRatio: ratio
+                };
+                setElements((prev) => [...prev, newItem]);
+            };
+            return;
+        }
+
         const newItem = {
             id: Date.now(),
             type: type,
@@ -88,9 +112,7 @@ export default function Canvas() {
             y: worldY,
             content: content,
             color: "Blue",
-            width: type === "text" ? undefined : 300,
-            height: type === "text" ? undefined : 300
-        }
+        };
         setElements((prev) => [...prev, newItem]);
     }
 
@@ -267,31 +289,28 @@ export default function Canvas() {
                                     cursor: isDragging ? "grabbing" : "grab",
                                 }}
                                 onMouseDown={(e) => handleElementMouseDown(el.id, e)}
-                            // className="absolute"
                             >
-                                <Resizable
+                                <ResizableContainer
                                     scale={scale}
                                     width={el.width}
                                     height={el.height}
                                     isSelected={true}
-                                    onResize={(w, h) => {
-                                        handleImageResize(el.id, w, h);
-                                    }
-
-                                    }>
+                                    lockAspect={true}
+                                    onResize={(w, h) => handleImageResize(el.id, w, h)}
+                                >
                                     <img
                                         src={el.content}
                                         alt="dropped"
                                         style={{
                                             width: "100%",
-                                            objectFit: "contain",
                                             height: "100%",
+                                            display: "block",
                                             userSelect: "none",
                                             pointerEvents: "none",
                                         }}
-                                        draggable={false} />
-                                </Resizable>
-
+                                        draggable={false}
+                                    />
+                                </ResizableContainer>
                             </div>
                         )
 
