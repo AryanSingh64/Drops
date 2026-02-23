@@ -13,7 +13,7 @@ export default function Canvas() {
     const [draggingElementId, setDraggingElementId] = useState(null);
     const [elements, setElements] = useState([])
     const [editingId, setEditingId] = useState(null);
-
+    const [selectedId, setSelectedId] = useState(null);
 
 
     const handleImageResize = (id, width, height) => {
@@ -119,6 +119,7 @@ export default function Canvas() {
     const handleCanvasMouseDown = (e) => {
         setIsPanning(true);
         setEditingId(null);
+        setSelectedId(null);
     }
 
     const handleCanvasMouseUp = () => {
@@ -178,6 +179,7 @@ export default function Canvas() {
     const handleElementMouseDown = (id, e) => {
         e.stopPropagation();
         setDraggingElementId(id);
+        setSelectedId(id);
     };
 
 
@@ -294,7 +296,8 @@ export default function Canvas() {
                                     scale={scale}
                                     width={el.width}
                                     height={el.height}
-                                    isSelected={true}
+                                    // isSelected={true}
+                                    isSelected={selectedId === el.id}
                                     lockAspect={true}
                                     onResize={(w, h) => handleImageResize(el.id, w, h)}
                                 >
