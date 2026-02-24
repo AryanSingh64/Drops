@@ -16,6 +16,7 @@ import { useEffect, useState, useRef, useCallback } from "react"
 export default function ResizableContainer({
     width,
     height,
+    onDelete,
     onResize,
     scale = 1,
     isSelected = false,
@@ -102,6 +103,31 @@ export default function ResizableContainer({
                             pointerEvents: "none",
                         }}
                     />
+
+
+                    <div 
+                          style={{
+                                position: "absolute",
+                                left: "-10px",
+                                top: "-10px",
+                                // cursor: isDragging ? "grabbing" : "grab",
+                                cursor:"pointer",
+                                background:"black",
+                                borderRadius:"50%",
+                                width:"20px",
+                                height:"20px",
+                                display:"flex",
+                                alignItems:"center",
+                                justifyContent:"center",
+                            }}
+                    onClick={(e)=>{
+                        e.stopPropagation();
+                        onDelete();
+                    }}
+                    >
+                        X
+                    
+                    </div>
 
                     {/* Resize handle - bottom right corner */}
                     <div

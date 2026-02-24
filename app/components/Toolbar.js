@@ -5,6 +5,9 @@ import { useState } from "react";
 export default function Toolbar({onAddElement}) {
     const handleImageUpload = (e) => {
         const file = e.target.files[0];
+        // const values = e.target.value;
+        // console.log(values);
+        e.target.value = "";
         if (!file) return;
         const reader = new FileReader();
         reader.onload = (event) => {

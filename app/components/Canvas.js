@@ -1,6 +1,6 @@
 "use client"
 import { useRef } from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Toolbar from "./Toolbar";
 import TextElement from "./elements/TextElement";
 import ResizableContainer from "./ResizableContainer";
@@ -15,6 +15,23 @@ export default function Canvas() {
     const [editingId, setEditingId] = useState(null);
     const [selectedId, setSelectedId] = useState(null);
 
+
+
+    useEffect(() => {
+        if(!selectedId) return;
+        if(editingId) return;
+        const handleKeyDown = (e)=>{
+            if(e.key === "Backspace" || e.key === "Delete"){
+                setElements((prev)=>prev.filter((el)=>el.id !== selectedId))
+                setSelectedId(null);
+            }
+            
+        }
+        window.addEventListener("keydown",handleKeyDown);
+        return ()=>{
+            window.removeEventListener("keydown",handleKeyDown)
+        }
+    }, [selectedId])
 
     const handleImageResize = (id, width, height) => {
         const minSize = 90;
@@ -140,6 +157,9 @@ export default function Canvas() {
         }
     }
 
+
+
+    
     const updateElement = (id, field, value) => {
         setElements((prev) => {
             return prev.map((el) => {
@@ -274,6 +294,8 @@ export default function Canvas() {
                                     updateElement={updateElement}
                                     onDragStart={(e) => handleElementMouseDown(el.id, e)}
                                     setEditingId={setEditingId}
+                                    isSelected={selectedId === el.id}
+                                    onDelete={() => setElements(prev => prev.filter(item => item.id !== el.id))}
                                 />
                             </div>
                         );
@@ -299,8 +321,11 @@ export default function Canvas() {
                                     // isSelected={true}
                                     isSelected={selectedId === el.id}
                                     lockAspect={true}
+                                    
+                                    onDelete={() => setElements(prev => prev.filter(item => item.id !== el.id))}
                                     onResize={(w, h) => handleImageResize(el.id, w, h)}
                                 >
+                         
                                     <img
                                         src={el.content}
                                         alt="dropped"
