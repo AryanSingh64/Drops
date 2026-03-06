@@ -1,51 +1,56 @@
+"use client";
+
 export default function TextElement({ el, isEditing, updateElement, setEditingId, isSelected, onDelete }) {
     return (
         <div style={{ position: "relative" }}>
-            {/* 1. X Button - Shows when selected OR editing */}
-            {(isSelected || isEditing) && (
-                <div
-                    style={{
-                        position: "absolute",
-                        left: "-20px",
-                        top: "-20px",
-                        cursor: "pointer",
-                        background: "black",
-                        borderRadius: "50%",
-                        width: "20px",
-                        height: "20px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        zIndex: 10
-                    }}
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        if (onDelete) onDelete();
-                    }}
-                >
-                    X
-                </div>
-            )}
-
-            {/* 2. The Invisible "Size Controller" Div 
-                This text is always here. When we type, it updates.
-                Because it is a regular div, it forces the container to be the exact right size.
-                When we are NOT editing, it becomes visible! */}
+            {/* Delete Button */}
             <div
-                className="whitespace-pre-wrap select-none"
+                className="delete-dot"
                 style={{
-                    visibility: isEditing ? "hidden" : "visible",
-                    color: el.content ? "inherit" : "#888",
-                    minWidth: "120px",
-                    minHeight: "24px"
+                    opacity: (isSelected || isEditing) ? 1 : undefined,
+                }}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    if (onDelete) onDelete();
                 }}
             >
-                {el.content || "Start Typing..."}
+                <svg viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="3">
+                    <path d="M6 18L18 6M6 6l12 12" />
+                </svg>
             </div>
 
-            {/* 3. The Absolutely-Positioned Textarea
-                This only mounts when we edit. Because it is absolute, it takes up EXACTLY 
-                the same space as the invisible div above it. No more jumping! */}
+            {/* Title (Instrument Serif italic) */}
+            <div
+                className="font-display"
+                style={{
+                    fontSize: "18px",
+                    color: "var(--text-primary)",
+                    marginBottom: el.content ? "8px" : "0",
+                    fontStyle: "italic",
+                    display: el.title ? "block" : "none",
+                }}
+            >
+                {el.title}
+            </div>
+
+            {/* Invisible Size Controller */}
+            <div
+                className="font-ui"
+                style={{
+                    whiteSpace: "pre-wrap",
+                    userSelect: "none",
+                    visibility: isEditing ? "hidden" : "visible",
+                    color: el.content ? "var(--text-primary)" : "var(--text-placeholder)",
+                    minWidth: "120px",
+                    minHeight: "24px",
+                    fontSize: "14px",
+                    lineHeight: "1.6",
+                }}
+            >
+                {el.content || "Start typing..."}
+            </div>
+
+            {/* Textarea */}
             {isEditing && (
                 <textarea
                     autoFocus
@@ -57,8 +62,26 @@ export default function TextElement({ el, isEditing, updateElement, setEditingId
                     onChange={(e) => updateElement(el.id, "content", e.target.value)}
                     onMouseDown={(e) => e.stopPropagation()}
                     onBlur={() => setEditingId(null)}
-                    placeholder="Start Typing..."
-                    className="absolute top-0 left-0 w-full h-full bg-transparent border-none outline-none resize-none p-0 m-0 overflow-hidden"
+                    placeholder="Start typing..."
+                    className="font-ui"
+                    style={{
+                        position: "absolute",
+                        top: el.title ? "34px" : "0",
+                        left: 0,
+                        width: "100%",
+                        height: `calc(100% - ${el.title ? '34px' : '0px'})`,
+                        background: "transparent",
+                        border: "none",
+                        outline: "none",
+                        resize: "none",
+                        padding: 0,
+                        margin: 0,
+                        overflow: "hidden",
+                        fontSize: "14px",
+                        lineHeight: "1.6",
+                        color: "var(--text-primary)",
+                        fontFamily: "inherit",
+                    }}
                 />
             )}
         </div>

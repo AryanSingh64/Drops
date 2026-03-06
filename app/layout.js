@@ -1,4 +1,5 @@
 import { Geist, Geist_Mono } from "next/font/google";
+import { Instrument_Serif } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -11,16 +12,24 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const instrumentSerif = Instrument_Serif({
+  variable: "--font-instrument-serif",
+  subsets: ["latin"],
+  weight: "400",
+  style: "italic",
+});
+
 export const metadata = {
-  title: "Drops",
-  description: "An Drag n Drop Notes taking app",
+  title: "Drops — Visual Canvas",
+  description: "A premium moodboard and visual canvas tool",
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} antialiased`}
+        style={{ fontFamily: "var(--font-geist-sans), system-ui, sans-serif" }}
       >
         {children}
       </body>
