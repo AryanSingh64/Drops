@@ -3,7 +3,10 @@ import { useRef } from "react";
 import { useState, useEffect } from "react";
 import Toolbar from "./Toolbar";
 import TextElement from "./elements/TextElement";
-import ResizableContainer from "./ResizableContainer";
+// import ResizableContainer from "./ResizableContainer";
+import { Rnd } from "react-rnd";
+import useBoardStore from "../store/useBoardStore";
+
 
 
 export default function Canvas() {
@@ -11,25 +14,24 @@ export default function Canvas() {
     const [scale, setScale] = useState(1);
     const [isPanning, setIsPanning] = useState(false);
     const [draggingElementId, setDraggingElementId] = useState(null);
-    const [elements, setElements] = useState([])
-    const [editingId, setEditingId] = useState(null);
-    const [selectedId, setSelectedId] = useState(null);
+    //using zustand
+    const { elements, setElements, editingId, selectedId } = useBoardStore();
 
 
 
     useEffect(() => {
-        if(!selectedId) return;
-        if(editingId) return;
-        const handleKeyDown = (e)=>{
-            if(e.key === "Backspace" || e.key === "Delete"){
-                setElements((prev)=>prev.filter((el)=>el.id !== selectedId))
+        if (!selectedId) return;
+        if (editingId) return;
+        const handleKeyDown = (e) => {
+            if (e.key === "Backspace" || e.key === "Delete") {
+                setElements((prev) => prev.filter((el) => el.id !== selectedId))
                 setSelectedId(null);
             }
-            
+
         }
-        window.addEventListener("keydown",handleKeyDown);
-        return ()=>{
-            window.removeEventListener("keydown",handleKeyDown)
+        window.addEventListener("keydown", handleKeyDown);
+        return () => {
+            window.removeEventListener("keydown", handleKeyDown)
         }
     }, [selectedId])
 
@@ -159,7 +161,7 @@ export default function Canvas() {
 
 
 
-    
+
     const updateElement = (id, field, value) => {
         setElements((prev) => {
             return prev.map((el) => {
@@ -200,6 +202,9 @@ export default function Canvas() {
         e.stopPropagation();
         setDraggingElementId(id);
         setSelectedId(id);
+        setElements((prev) =>
+            prev.map(el => el.id === id ? { ...el, isEditing: true } : el)
+        );
     };
 
 
@@ -304,42 +309,77 @@ export default function Canvas() {
                     if (el.type === "image") {
                         const isDragging = draggingElementId === el.id;
                         return (
-                            <div
+                            <Rnd
                                 key={el.id}
-                                style={{
-                                    position: "absolute",
-                                    left: el.x,
-                                    top: el.y,
-                                    cursor: isDragging ? "grabbing" : "grab",
+                                // where to render
+                                position={{ x: el.x, y: el.y }}
+                                size={{ width: el.width, height: el.height }}
+                                scale={scale}
+                                lockAspectRatio={true}
+                                disableDragging={selectedId !== el.id}
+                                onDragStop={(e, data) => {
+                                    updateElement(el.id, "x", data.x);
+                                    updateElement(el.id, "y", data.y);
+                                }}
+                                onResizeStop={(e, direction, ref, delta, position) => {
+                                    setElements((prev) => prev.map((item) => {
+                                        if (item.id === el.id) {
+                                            return {
+                                                ...item,
+                                                width: parseInt(ref.style.width, 10),
+                                                height: parseInt(ref.style.height, 10),
+                                                x: position.x,
+                                                y: position.y
+                                            };
+                                        }
+                                        return item;
+                                    }));
                                 }}
                                 onMouseDown={(e) => handleElementMouseDown(el.id, e)}
+                                style={{
+                                    cursor: isDragging ? "grabbing" : "grab",
+                                    zIndex: selectedId === el.id ? 10 : 1,
+                                }}
                             >
-                                <ResizableContainer
-                                    scale={scale}
-                                    width={el.width}
-                                    height={el.height}
-                                    // isSelected={true}
-                                    isSelected={selectedId === el.id}
-                                    lockAspect={true}
-                                    
-                                    onDelete={() => setElements(prev => prev.filter(item => item.id !== el.id))}
-                                    onResize={(w, h) => handleImageResize(el.id, w, h)}
-                                >
-                         
-                                    <img
-                                        src={el.content}
-                                        alt="dropped"
-                                        style={{
-                                            width: "100%",
-                                            height: "100%",
-                                            display: "block",
-                                            userSelect: "none",
-                                            pointerEvents: "none",
+                                {/* Delete Button */}
+                                {selectedId === el.id && (
+                                    <div
+                                        onClick={(e) => {
+                                            e.stopPropagation(); // prevent dragging when clicking delete
+                                            setElements(prev => prev.filter(item => item.id !== el.id));
                                         }}
-                                        draggable={false}
-                                    />
-                                </ResizableContainer>
-                            </div>
+                                        style={{
+                                            position: "absolute",
+                                            left: "-10px",
+                                            top: "-10px",
+                                            cursor: "pointer",
+                                            background: "black",
+                                            borderRadius: "50%",
+                                            width: "20px",
+                                            height: "20px",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            zIndex: 20
+                                        }}
+                                    >
+                                        X
+                                    </div>
+                                )}
+                                {/* Image / Content */}
+                                <img
+                                    src={el.content}
+                                    draggable={false}
+                                    style={{
+                                        width: "100%",
+                                        height: "100%",
+                                        display: "block",
+                                        pointerEvents: "none",
+                                        border: selectedId === el.id ? "2px solid #0099ff" : "none"
+                                    }}
+                                    alt="canvas element"
+                                />
+                            </Rnd>
                         )
 
                     }
