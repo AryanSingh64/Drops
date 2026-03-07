@@ -2,22 +2,7 @@
 
 export default function TextElement({ el, isEditing, updateElement, setEditingId, isSelected, onDelete }) {
     return (
-        <div style={{ position: "relative" }}>
-            {/* Delete Button */}
-            <div
-                className="delete-dot"
-                style={{
-                    opacity: (isSelected || isEditing) ? 1 : undefined,
-                }}
-                onClick={(e) => {
-                    e.stopPropagation();
-                    if (onDelete) onDelete();
-                }}
-            >
-                <svg viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="3">
-                    <path d="M6 18L18 6M6 6l12 12" />
-                </svg>
-            </div>
+        <div style={{ position: "relative", width: "100%", height: "100%" }}>
 
             {/* Title (Instrument Serif italic) */}
             <div

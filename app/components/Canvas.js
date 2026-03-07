@@ -11,12 +11,29 @@ import ColorPaletteCard from "./elements/ColorPaletteCard";
 import { Rnd } from "react-rnd";
 import useBoardStore from "../store/useBoardStore";
 
+// Delete button component for all cards
+function DeleteButton({ onClick, isVisible }) {
+    return (
+        <div
+            className="delete-dot"
+            style={{ opacity: isVisible ? 1 : undefined }}
+            onClick={(e) => {
+                e.stopPropagation();
+                onClick();
+            }}
+        >
+            <svg viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="3">
+                <path d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </div>
+    );
+}
+
 export default function Canvas() {
     const [offset, setOffset] = useState({ x: 0, y: 0 });
     const [scale, setScale] = useState(1);
     const [isPanning, setIsPanning] = useState(false);
-    const [draggingElementId, setDraggingElementId] = useState(null);
-    const [contextMenu, setContextMenu] = useState(null); // { x, y, elementId }
+    const [contextMenu, setContextMenu] = useState(null);
     const viewportRef = useRef(null);
 
     const {
@@ -88,8 +105,8 @@ export default function Canvas() {
     const addElement = (type, content = "") => {
         const centerX = window.innerWidth / 2 - offset.x;
         const centerY = window.innerHeight / 2 - offset.y;
-        const worldX = centerX / scale;
-        const worldY = centerY / scale;
+        const worldX = centerX / scale + (Math.random() * 80 - 40);
+        const worldY = centerY / scale + (Math.random() * 80 - 40);
 
         if (type === "image" && content) {
             const img = new Image();
@@ -111,6 +128,7 @@ export default function Canvas() {
             setElements((prev) => [...prev, {
                 id: Date.now(), type: "checklist",
                 x: worldX, y: worldY,
+                width: 280, height: 220,
                 title: "Checklist",
                 items: [
                     { id: 1, text: "First item", checked: false },
@@ -124,6 +142,7 @@ export default function Canvas() {
             setElements((prev) => [...prev, {
                 id: Date.now(), type: "link",
                 x: worldX, y: worldY,
+                width: 280, height: 140,
                 url: "", linkTitle: "", favicon: null,
             }]);
             return;
@@ -133,6 +152,7 @@ export default function Canvas() {
             setElements((prev) => [...prev, {
                 id: Date.now(), type: "palette",
                 x: worldX, y: worldY,
+                width: 320, height: 260,
                 title: "Palette",
                 colors: ["#E8C97A", "#D4826A", "#C47FA3", "#4E8B7A", "#E2A65D", "#8B6FCF"],
             }]);
@@ -143,12 +163,17 @@ export default function Canvas() {
         setElements((prev) => [...prev, {
             id: Date.now(), type,
             x: worldX, y: worldY,
+            width: 240, height: 100,
             content: "", title: "",
         }]);
     };
 
     // === Panning ===
     const handleCanvasMouseDown = (e) => {
+        // If the user clicked inside a react-rnd card, don't deselect or start panning.
+        // react-rnd wraps cards in divs with class "react-draggable".
+        if (e.target.closest('.react-draggable')) return;
+
         if (activeTool === 'pan' || e.button === 1) {
             setIsPanning(true);
         }
@@ -159,12 +184,12 @@ export default function Canvas() {
 
     const handleCanvasMouseUp = () => {
         setIsPanning(false);
-        setDraggingElementId(null);
     };
 
     const handleCanvasMouseMove = (e) => {
-        e.preventDefault();
+        // Only preventDefault when actually panning — otherwise it kills react-rnd's drag
         if (isPanning) {
+            e.preventDefault();
             setOffset((prev) => ({
                 x: prev.x + e.movementX,
                 y: prev.y + e.movementY,
@@ -178,27 +203,42 @@ export default function Canvas() {
         );
     };
 
-    const handleElementMouseMove = (e) => {
-        if (draggingElementId === null) return;
-        setElements((prev) =>
-            prev.map((el) =>
-                el.id === draggingElementId
-                    ? { ...el, x: el.x + e.movementX / scale, y: el.y + e.movementY / scale }
-                    : el
-            )
-        );
+    // Common Rnd drag/resize handlers
+    const handleDragStop = (el, e, data) => {
+        setElements((prev) => prev.map((item) =>
+            item.id === el.id ? { ...item, x: data.x, y: data.y } : item
+        ));
     };
 
-    const handleElementMouseDown = (id, e) => {
+    const handleResizeStop = (el, e, direction, ref, delta, position) => {
+        setElements((prev) => prev.map((item) => {
+            if (item.id === el.id) {
+                return {
+                    ...item,
+                    width: parseInt(ref.style.width, 10),
+                    height: parseInt(ref.style.height, 10),
+                    x: position.x,
+                    y: position.y,
+                };
+            }
+            return item;
+        }));
+    };
+
+    const handleRndMouseDown = (el, e) => {
         e.stopPropagation();
-        setDraggingElementId(id);
-        setSelectedId(id);
+        setSelectedId(el.id);
     };
 
     const onDoubleClick = (id, e) => {
         e.stopPropagation();
         setEditingId(id);
-        setDraggingElementId(null);
+    };
+
+    const handleCardContextMenu = (el, e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setContextMenu({ x: e.clientX, y: e.clientY, elementId: el.id });
     };
 
     // === Zoom ===
@@ -237,43 +277,6 @@ export default function Canvas() {
         return "default";
     };
 
-    // === Render a generic glass card wrapper ===
-    const renderCard = (el, children) => {
-        const isBeingDeleted = deletingId === el.id;
-        const isSelected_ = selectedId === el.id;
-        const isEditing_ = editingId === el.id;
-
-        return (
-            <div
-                key={el.id}
-                className={`card-glass anim-fade-up ${isSelected_ ? 'selected' : ''} ${isBeingDeleted ? 'anim-shrink-fade' : ''}`}
-                style={{
-                    position: "absolute",
-                    left: el.x,
-                    top: el.y,
-                    padding: "18px",
-                    cursor: isEditing_ ? "text" : (draggingElementId === el.id ? "grabbing" : "grab"),
-                    zIndex: isSelected_ ? 10 : 1,
-                    animationDelay: `${(elements.indexOf(el) % 8) * 0.04}s`,
-                }}
-                onDoubleClick={(e) => onDoubleClick(el.id, e)}
-                onMouseDown={(e) => !isEditing_ && handleElementMouseDown(el.id, e)}
-                onContextMenu={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setContextMenu({ x: e.clientX, y: e.clientY, elementId: el.id });
-                }}
-            >
-                {/* Corner resize dots */}
-                <div className="corner-dot top-left" onMouseDown={(e) => e.stopPropagation()} />
-                <div className="corner-dot bottom-left" onMouseDown={(e) => e.stopPropagation()} />
-                <div className="corner-dot bottom-right" onMouseDown={(e) => e.stopPropagation()} />
-
-                {children}
-            </div>
-        );
-    };
-
     return (
         <div
             onDragOver={(e) => e.preventDefault()}
@@ -289,10 +292,7 @@ export default function Canvas() {
             }}
             onMouseDown={handleCanvasMouseDown}
             onMouseUp={handleCanvasMouseUp}
-            onMouseMove={(e) => {
-                handleCanvasMouseMove(e);
-                handleElementMouseMove(e);
-            }}
+            onMouseMove={handleCanvasMouseMove}
             ref={viewportRef}
             className="canvas-bg"
         >
@@ -335,60 +335,39 @@ export default function Canvas() {
                 }}
             >
                 {elements.map((el) => {
-                    // === TEXT CARD ===
-                    if (el.type === "text") {
-                        return renderCard(el,
-                            <TextElement
-                                el={el}
-                                isEditing={editingId === el.id}
-                                updateElement={updateElement}
-                                setEditingId={setEditingId}
-                                isSelected={selectedId === el.id}
-                                onDelete={() => deleteElement(el.id)}
-                            />
-                        );
-                    }
+                    const isBeingDeleted = deletingId === el.id;
+                    const isSelected_ = selectedId === el.id;
+                    const isEditing_ = editingId === el.id;
 
-                    // === IMAGE CARD ===
+                    // === IMAGE CARD (locked aspect ratio) ===
                     if (el.type === "image") {
-                        const isBeingDeleted = deletingId === el.id;
-                        const isSelected_ = selectedId === el.id;
                         return (
                             <Rnd
                                 key={el.id}
                                 position={{ x: el.x, y: el.y }}
-                                size={{ width: el.width, height: el.height }}
+                                size={{ width: el.width || 300, height: el.height || 200 }}
                                 scale={scale}
                                 lockAspectRatio={true}
-                                disableDragging={!isSelected_}
-                                onDragStop={(e, data) => {
-                                    updateElement(el.id, "x", data.x);
-                                    updateElement(el.id, "y", data.y);
+                                onDragStart={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedId(el.id);
                                 }}
-                                onResizeStop={(e, direction, ref, delta, position) => {
-                                    setElements((prev) => prev.map((item) => {
-                                        if (item.id === el.id) {
-                                            return {
-                                                ...item,
-                                                width: parseInt(ref.style.width, 10),
-                                                height: parseInt(ref.style.height, 10),
-                                                x: position.x,
-                                                y: position.y,
-                                            };
-                                        }
-                                        return item;
-                                    }));
-                                }}
-                                onMouseDown={(e) => handleElementMouseDown(el.id, e)}
-                                className={`anim-fade-up ${isBeingDeleted ? 'anim-shrink-fade' : ''}`}
+                                onDragStop={(e, data) => handleDragStop(el, e, data)}
+                                onResizeStop={(e, dir, ref, delta, pos) => handleResizeStop(el, e, dir, ref, delta, pos)}
+                                onMouseDown={(e) => handleRndMouseDown(el, e)}
+                                onContextMenu={(e) => handleCardContextMenu(el, e)}
                                 style={{
-                                    cursor: draggingElementId === el.id ? "grabbing" : "grab",
                                     zIndex: isSelected_ ? 10 : 1,
                                 }}
+                                resizeHandleStyles={{
+                                    bottomRight: { width: '14px', height: '14px', right: '-4px', bottom: '-4px', cursor: 'nwse-resize' },
+                                    bottomLeft: { width: '14px', height: '14px', left: '-4px', bottom: '-4px', cursor: 'nesw-resize' },
+                                    topRight: { width: '14px', height: '14px', right: '-4px', top: '-4px', cursor: 'nesw-resize' },
+                                    topLeft: { width: '14px', height: '14px', left: '-4px', top: '-4px', cursor: 'nwse-resize' },
+                                }}
                             >
-                                {/* Glass wrapper around image */}
                                 <div
-                                    className={`card-glass ${isSelected_ ? 'selected' : ''}`}
+                                    className={`card-glass anim-fade-up ${isSelected_ ? 'selected' : ''} ${isBeingDeleted ? 'anim-shrink-fade' : ''}`}
                                     style={{
                                         width: "100%",
                                         height: "100%",
@@ -396,25 +375,7 @@ export default function Canvas() {
                                         padding: 0,
                                     }}
                                 >
-                                    {/* Delete dot */}
-                                    <div
-                                        className="delete-dot"
-                                        style={{ opacity: isSelected_ ? 1 : undefined }}
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            deleteElement(el.id);
-                                        }}
-                                    >
-                                        <svg viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="3">
-                                            <path d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
-                                    </div>
-
-                                    {/* Corner dots */}
-                                    <div className="corner-dot top-left" onMouseDown={(e) => e.stopPropagation()} />
-                                    <div className="corner-dot bottom-left" onMouseDown={(e) => e.stopPropagation()} />
-                                    <div className="corner-dot bottom-right" onMouseDown={(e) => e.stopPropagation()} />
-
+                                    <DeleteButton onClick={() => deleteElement(el.id)} isVisible={isSelected_} />
                                     <img
                                         src={el.content}
                                         draggable={false}
@@ -433,41 +394,87 @@ export default function Canvas() {
                         );
                     }
 
-                    // === CHECKLIST CARD ===
-                    if (el.type === "checklist") {
-                        return renderCard(el,
-                            <ChecklistCard
-                                el={el}
-                                isSelected={selectedId === el.id}
-                                updateElement={updateElement}
-                                onDelete={() => deleteElement(el.id)}
-                            />
-                        );
-                    }
+                    // === ALL OTHER CARDS (text, checklist, link, palette) — Rnd-wrapped ===
+                    return (
+                        <Rnd
+                            key={el.id}
+                            position={{ x: el.x, y: el.y }}
+                            size={{ width: el.width || 240, height: el.height || 100 }}
+                            scale={scale}
+                            minWidth={140}
+                            minHeight={60}
+                            onDragStart={(e) => {
+                                if (isEditing_) return false; // don't drag when editing
+                                e.stopPropagation();
+                                setSelectedId(el.id);
+                            }}
+                            onDragStop={(e, data) => handleDragStop(el, e, data)}
+                            onResizeStop={(e, dir, ref, delta, pos) => handleResizeStop(el, e, dir, ref, delta, pos)}
+                            onMouseDown={(e) => handleRndMouseDown(el, e)}
+                            onContextMenu={(e) => handleCardContextMenu(el, e)}
+                            enableResizing={true}
+                            style={{
+                                zIndex: isSelected_ ? 10 : 1,
+                            }}
+                            resizeHandleStyles={{
+                                bottomRight: { width: '14px', height: '14px', right: '-4px', bottom: '-4px', cursor: 'nwse-resize' },
+                                bottomLeft: { width: '14px', height: '14px', left: '-4px', bottom: '-4px', cursor: 'nesw-resize' },
+                                topRight: { width: '14px', height: '14px', right: '-4px', top: '-4px', cursor: 'nesw-resize' },
+                                topLeft: { width: '14px', height: '14px', left: '-4px', top: '-4px', cursor: 'nwse-resize' },
+                            }}
+                        >
+                            <div
+                                className={`card-glass anim-fade-up ${isSelected_ ? 'selected' : ''} ${isBeingDeleted ? 'anim-shrink-fade' : ''}`}
+                                style={{
+                                    width: "100%",
+                                    height: "100%",
+                                    padding: "18px",
+                                    overflow: "hidden",
+                                }}
+                                onDoubleClick={(e) => onDoubleClick(el.id, e)}
+                            >
+                                {/* Delete button on every card */}
+                                <DeleteButton onClick={() => deleteElement(el.id)} isVisible={isSelected_} />
 
-                    // === LINK CARD ===
-                    if (el.type === "link") {
-                        return renderCard(el,
-                            <LinkPreviewCard
-                                el={el}
-                                isSelected={selectedId === el.id}
-                                updateElement={updateElement}
-                            />
-                        );
-                    }
+                                {/* Render card content by type */}
+                                {el.type === "text" && (
+                                    <TextElement
+                                        el={el}
+                                        isEditing={isEditing_}
+                                        updateElement={updateElement}
+                                        setEditingId={setEditingId}
+                                        isSelected={isSelected_}
+                                        onDelete={() => deleteElement(el.id)}
+                                    />
+                                )}
 
-                    // === PALETTE CARD ===
-                    if (el.type === "palette") {
-                        return renderCard(el,
-                            <ColorPaletteCard
-                                el={el}
-                                isSelected={selectedId === el.id}
-                                updateElement={updateElement}
-                            />
-                        );
-                    }
+                                {el.type === "checklist" && (
+                                    <ChecklistCard
+                                        el={el}
+                                        isSelected={isSelected_}
+                                        updateElement={updateElement}
+                                        onDelete={() => deleteElement(el.id)}
+                                    />
+                                )}
 
-                    return null;
+                                {el.type === "link" && (
+                                    <LinkPreviewCard
+                                        el={el}
+                                        isSelected={isSelected_}
+                                        updateElement={updateElement}
+                                    />
+                                )}
+
+                                {el.type === "palette" && (
+                                    <ColorPaletteCard
+                                        el={el}
+                                        isSelected={isSelected_}
+                                        updateElement={updateElement}
+                                    />
+                                )}
+                            </div>
+                        </Rnd>
+                    );
                 })}
             </div>
 

@@ -1,6 +1,8 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
-const useBoardStore = create((set, get) => ({
+
+const useBoardStore = create(persist((set, get) => ({
     // === Canvas Elements ===
     elements: [],
     selectedId: null,
@@ -104,6 +106,19 @@ const useBoardStore = create((set, get) => ({
 
     // --- Deleting ---
     setDeletingId: (id) => set({ deletingId: id }),
+}),
+{
+    name: 'drops-board',
+    partialize: (state) => ({
+        elements: state.elements,
+        activeTool: state.activeTool,
+        currentFolderId: state.currentFolderId,
+        folderPath: state.folderPath,
+        sidebarOpen: state.sidebarOpen,
+        propertiesPanelOpen: state.propertiesPanelOpen,
+        boards: state.boards,
+        activeBoardId: state.activeBoardId,
+    }),
 }));
 
 export default useBoardStore;

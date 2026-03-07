@@ -101,6 +101,13 @@ body {
     border-radius: var(--card-radius);
     position: relative;
     transition: border-color 0.3s var(--ease-settle), box-shadow 0.3s var(--ease-settle), transform 0.2s var(--ease-settle);
+    /* Hide scrollbar */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.card-glass::-webkit-scrollbar {
+    display: none;
 }
 
 .card-glass::before {
@@ -170,13 +177,13 @@ body {
 /* === DELETE DOT === */
 .delete-dot {
     position: absolute;
-    top: -8px;
-    right: -8px;
-    width: 22px;
-    height: 22px;
+    top: 6px;
+    right: 6px;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
-    background: rgba(30, 28, 35, 0.9);
-    border: 1.5px solid rgba(255, 255, 255, 0.1);
+    background: rgba(30, 28, 35, 0.85);
+    border: 1.5px solid rgba(255, 255, 255, 0.12);
     display: flex;
     align-items: center;
     justify-content: center;
