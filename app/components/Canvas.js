@@ -10,6 +10,9 @@ import LinkPreviewCard from "./elements/LinkPreviewCard";
 import ColorPaletteCard from "./elements/ColorPaletteCard";
 import { Rnd } from "react-rnd";
 import useBoardStore from "../store/useBoardStore";
+import ZoomControl from "./ZoomControls";
+
+
 
 // Delete button component for all cards
 function DeleteButton({ onClick, isVisible }) {
@@ -30,8 +33,8 @@ function DeleteButton({ onClick, isVisible }) {
 }
 
 export default function Canvas() {
-    const [offset, setOffset] = useState({ x: 0, y: 0 });
-    const [scale, setScale] = useState(1);
+    // const [offset, setOffset] = useState({ x: 0, y: 0 });
+    // const [scale, setScale] = useState(1);
     const [isPanning, setIsPanning] = useState(false);
     const [contextMenu, setContextMenu] = useState(null);
     const viewportRef = useRef(null);
@@ -43,6 +46,7 @@ export default function Canvas() {
         activeTool, setActiveTool,
         deletingId, deleteElement,
         folderPath,
+        scale, offset, setScale, setOffset,
     } = useBoardStore();
 
     // Nesting depth tint
@@ -483,7 +487,10 @@ export default function Canvas() {
 
             {/* AI Panel */}
             <AiPanel />
-
+            
+            {/* Zoom Control */}
+            <ZoomControl />
+            
             {/* Context Menu */}
             {contextMenu && (
                 <ContextMenu

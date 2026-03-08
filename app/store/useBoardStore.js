@@ -12,6 +12,14 @@ const useBoardStore = create(persist((set, get) => ({
     // 'select' | 'pan' | 'text' | 'image' | 'link' | 'checklist' | 'palette' | 'line' | 'subfolder' | 'draw' | 'comment'
     activeTool: 'select',
 
+
+
+    //adding zoom state 
+    scale: 1,
+    offset: { x: 0, y: 0 },
+
+
+
     // === Subfolder Navigation ===
     currentFolderId: null, // null = root
     folderPath: [], // breadcrumb: [{ id, name }, ...]
@@ -36,6 +44,14 @@ const useBoardStore = create(persist((set, get) => ({
     setSelectedId: (id) => set({ selectedId: id }),
     setEditingId: (id) => set({ editingId: id }),
     setActiveTool: (tool) => set({ activeTool: tool }),
+    setScale: (s) => set({ scale: s }),
+    setOffset: (callbackOrValue) => set((state) => ({
+        offset: typeof callbackOrValue === 'function' ? callbackOrValue(state.offset) : callbackOrValue
+    })),
+
+
+
+
 
     // Delete with animation
     deleteElement: (id) => {
@@ -106,6 +122,13 @@ const useBoardStore = create(persist((set, get) => ({
 
     // --- Deleting ---
     setDeletingId: (id) => set({ deletingId: id }),
+
+
+
+    //zoom
+    zoomIn: () => set((state) => ({ scale: Math.min(5, state.scale * 1.2) })),
+    zoomOut: () => set((state) => ({ scale: Math.max(0.15, state.scale / 1.2) })),
+
 }),
 {
     name: 'drops-board',
@@ -118,6 +141,8 @@ const useBoardStore = create(persist((set, get) => ({
         propertiesPanelOpen: state.propertiesPanelOpen,
         boards: state.boards,
         activeBoardId: state.activeBoardId,
+        scale: state.scale,
+        offset: state.offset,
     }),
 }));
 
