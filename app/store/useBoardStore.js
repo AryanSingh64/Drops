@@ -126,8 +126,32 @@ const useBoardStore = create(persist((set, get) => ({
 
 
     //zoom
-    zoomIn: () => set((state) => ({ scale: Math.min(5, state.scale * 1.2) })),
-    zoomOut: () => set((state) => ({ scale: Math.max(0.15, state.scale / 1.2) })),
+ zoomIn: () => set((state) => {
+    const newScale = Math.min(5, state.scale * 1.2);
+    const cx = window.innerWidth / 2;
+    const cy = window.innerHeight / 2;
+    const factor = newScale / state.scale;
+    return {
+        scale: newScale,
+        offset: {
+            x: cx - (cx - state.offset.x) * factor,
+            y: cy - (cy - state.offset.y) * factor,
+        }
+    };
+}),
+zoomOut: () => set((state) => {
+    const newScale = Math.max(0.15, state.scale / 1.2);
+    const cx = window.innerWidth / 2;
+    const cy = window.innerHeight / 2;
+    const factor = newScale / state.scale;
+    return {
+        scale: newScale,
+        offset: {
+            x: cx - (cx - state.offset.x) * factor,
+            y: cy - (cy - state.offset.y) * factor,
+        }
+    };
+}),
 
 }),
 {

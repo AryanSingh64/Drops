@@ -19,7 +19,8 @@ const minusIcon = (
 export default function ZoomControl() {
     const { scale, zoomIn, zoomOut } = useBoardStore();
     return (
-    <div className="glass-strong" style={{
+    <div onMouseDown={(e) => e.stopPropagation()}
+ className="glass-strong" style={{
         position: "fixed",
         bottom: "24px",
         right: "20px",
@@ -31,7 +32,7 @@ export default function ZoomControl() {
         borderRadius: "16px",
     }}>
         {/* Zoom In Button */}
-        <button className="toolbar-btn" onClick={zoomIn}>
+        <button  className="toolbar-btn" onClick={zoomIn}>
             {plusIcon}
         </button>
         {/* Percentage Display */}
@@ -42,7 +43,7 @@ export default function ZoomControl() {
             minWidth: "40px",
             textAlign: "center",
         }}>
-            {scale * 100}%
+            {Math.round(scale * 100)}%
         </span>
         {/* Zoom Out Button */}
         <button className="toolbar-btn" onClick={zoomOut}>
